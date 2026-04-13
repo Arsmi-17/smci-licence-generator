@@ -242,6 +242,29 @@ def _verify_user_password(password: str) -> bool:
         return False
     return False
 
+
+def _get_download_link() -> str | None:
+    if not _supabase_enabled():
+        return None
+    url = f"{SUPABASE_URL.rstrip('/')}/rest/v1/smci_files"
+    params = {
+        "select": "bucket_link",
+        "title": "eq.smci_app",
+        "limit": "1"
+    }
+    try:
+        res = requests.get(url, headers=_supabase_headers(prefer="count=exact"), params=params, timeout=10)
+        if not res.ok:
+            return None
+        data = res.json()
+        if not data:
+            return None
+        return data[0].get("bucket_link")
+    except Exception:
+        return None
+    return None
+
+
 def _valid_contact(contact: str) -> bool:
     if not contact:
         return False
@@ -435,7 +458,10 @@ async def download_verify(body: dict):
         return JSONResponse({"success": False, "error": "Password is required"}, status_code=400)
     if not _verify_user_password(password):
         return JSONResponse({"success": False, "error": "Password not recognized"}, status_code=401)
-    return {"success": True}
+    link = _get_download_link()
+    if not link:
+        return JSONResponse({"success": False, "error": "Download link not available"}, status_code=500)
+    return {"success": True, "url": link}
 
 
 @app.get("/api/licenses/next")
