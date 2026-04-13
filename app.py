@@ -338,6 +338,14 @@ async def get_logo():
     return Response(status_code=404)
 
 
+@app.get("/smci_app_secure.zip")
+async def get_zip():
+    zip_path = os.path.join(BASE_DIR, "smci_app_secure.zip")
+    if os.path.exists(zip_path):
+        return FileResponse(zip_path, media_type="application/zip")
+    return Response(status_code=404)
+
+
 @app.get("/api/auth/me")
 async def auth_me(request: Request):
     ok, user_id = _require_auth(request)
