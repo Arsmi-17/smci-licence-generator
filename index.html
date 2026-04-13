@@ -424,9 +424,9 @@
         <div class="alert hidden" id="loginAlert"></div>
       </div>
       <div class="card download-card">
-        <div class="note">Download the secure application package</div>
-        <p class="download-text">Click the ZIP file below to download the SMCI secure app bundle.</p>
-        <a class="outline download-link" href="/smci_app_secure.zip" download="@smci_app_secure.zip">@smci_app_secure.zip</a>
+        <div class="note">The zip contains the SMCI Application.</div>
+        <p class="download-text">Enter the login password to unlock the secure app download.</p>
+        <button class="outline download-link" onclick="openDownloadModal()">Download file</button>
       </div>
     </div>
 
@@ -497,10 +497,25 @@
     </div>
   </div>
 
+  <div class="modal hidden" id="downloadModal">
+    <div class="modal-backdrop" onclick="closeDownloadModal()"></div>
+    <div class="modal-card">
+      <div class="modal-header">Confirm Download</div>
+      <label>Enter a valid SMCI user password</label>
+      <input id="downloadPassword" type="password" />
+      <div class="modal-actions">
+        <button class="outline" onclick="closeDownloadModal()">Cancel</button>
+        <button class="primary" onclick="downloadWithPassword()">Download file</button>
+      </div>
+      <div class="alert hidden" id="downloadAlert"></div>
+    </div>
+  </div>
+
   <script>
     let currentPage = 1;
     let pageSize = 10;
     let totalCount = 0;
+    let loginPasswordCache = '';
 
     function showAlert(id, msg) {
       const el = document.getElementById(id);
@@ -590,11 +605,13 @@
         showAlert('loginAlert', data.error || 'Login failed');
         return;
       }
+      loginPasswordCache = password;
       await checkAuth();
     }
 
     async function logout() {
       await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
+      loginPasswordCache = '';
       resetLoginFields();
       await checkAuth();
     }
@@ -606,6 +623,43 @@
 
     function closePasswordModal() {
       document.getElementById('passwordModal').classList.add('hidden');
+    }
+
+    function openDownloadModal() {
+      hideAlert('downloadAlert');
+      const input = document.getElementById('downloadPassword');
+      if (input) input.value = '';
+      document.getElementById('downloadModal').classList.remove('hidden');
+    }
+
+    function closeDownloadModal() {
+      document.getElementById('downloadModal').classList.add('hidden');
+    }
+
+    async function downloadWithPassword() {
+      hideAlert('downloadAlert');
+      const entered = document.getElementById('downloadPassword').value.trim();
+      if (!entered) {
+        showAlert('downloadAlert', 'Password is required');
+        return;
+      }
+      const res = await fetch('/api/download/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: entered })
+      });
+      const data = await res.json();
+      if (!data.success) {
+        showAlert('downloadAlert', data.error || 'Password not recognized');
+        return;
+      }
+      closeDownloadModal();
+      const a = document.createElement('a');
+      a.href = '/smci_app_secure.zip';
+      a.download = '@smci_app_secure.zip';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
     }
 
     async function updatePassword() {

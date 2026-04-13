@@ -221,6 +221,27 @@ def _verify_password(password: str, stored: str) -> bool:
     except Exception:
         return False
 
+
+def _verify_user_password(password: str) -> bool:
+    if not _supabase_enabled():
+        return False
+    url = f"{SUPABASE_URL.rstrip('/')}/rest/v1/{TABLE_AUTH}"
+    params = {
+        "select": "user_id,password_hash,status",
+        "status": "eq.1"
+    }
+    try:
+        res = requests.get(url, headers=_supabase_headers(prefer="count=exact"), params=params, timeout=10)
+        if not res.ok:
+            return False
+        users = res.json()
+        for user in users:
+            if _verify_password(password, user.get("password_hash", "")):
+                return True
+    except Exception:
+        return False
+    return False
+
 def _valid_contact(contact: str) -> bool:
     if not contact:
         return False
@@ -404,6 +425,16 @@ async def auth_update_password(request: Request, body: dict):
     ok2, err = _update_password(user_id, new_hash)
     if not ok2:
         return JSONResponse({"success": False, "error": err}, status_code=500)
+    return {"success": True}
+
+
+@app.post("/api/download/verify")
+async def download_verify(body: dict):
+    password = body.get("password") or ""
+    if not password:
+        return JSONResponse({"success": False, "error": "Password is required"}, status_code=400)
+    if not _verify_user_password(password):
+        return JSONResponse({"success": False, "error": "Password not recognized"}, status_code=401)
     return {"success": True}
 
 
