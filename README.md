@@ -39,14 +39,16 @@ Copy the generated values into `.env` in the project root.
 
 ### 2. Configure `.env`
 
-Create `licence-generator/.env` with:
+Create a `.env` file in the project root with this format:
 
 ```env
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-LICENSE_PRIVATE_KEY_B64=...
-LICENSE_ENC_KEY_B64=...
+LICENSE_PRIVATE_KEY_B64=<base64-encoded-private-key>
+LICENSE_ENC_KEY_B64=<base64-encoded-encryption-key>
 ```
+
+Use placeholder values in the README example instead of actual secret values.
 
 ### 3. Configure Supabase
 
